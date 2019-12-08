@@ -7,7 +7,9 @@ $db = require __DIR__ . '/db.php';
 
 $config = [
     'id' => 'basic',
+    'name' => 'Task manager',
     'language' => 'ru',
+    'defaultRoute' => 'task/my',
     'basePath' => dirname(__DIR__),
     'bootstrap' => ['log'],
     'aliases' => [
@@ -43,6 +45,13 @@ $config = [
                     'class' => 'yii\log\FileTarget',
                     'levels' => ['error', 'warning'],
                 ],
+                [
+                    'class' => 'yii\log\FileTarget',
+                    'levels' => ['info'],
+                    'categories' => ['log'],
+                    'logFile' => "@runtime/logs/login.log",
+                    'logVars' => [],
+                ],
             ],
         ],
         'db' => $db,
@@ -51,6 +60,7 @@ $config = [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
             'rules' => [
+                '<controller:[\w-]+>/<id:\d+>'        => '<controller>/view'
             ],
         ],
 

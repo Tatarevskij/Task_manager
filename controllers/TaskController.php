@@ -3,16 +3,17 @@
 namespace app\controllers;
 
 use Yii;
-use app\models\product;
+use app\models\Task;
+use yii\filters\AccessControl;
 use yii\data\ActiveDataProvider;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 
 /**
- * ProductController implements the CRUD actions for product model.
+ * TaskController implements the CRUD actions for Task model.
  */
-class ProductController extends Controller
+class TaskController extends Controller
 {
     /**
      * {@inheritdoc}
@@ -20,6 +21,15 @@ class ProductController extends Controller
     public function behaviors()
     {
         return [
+            'access' => [
+                'class' => AccessControl::className(),
+                'rules' => [
+                    [
+                        'allow' => true,
+                        'roles' => ['@'],
+                    ],
+                ],
+            ],
             'verbs' => [
                 'class' => VerbFilter::className(),
                 'actions' => [
@@ -30,22 +40,55 @@ class ProductController extends Controller
     }
 
     /**
-     * Lists all product models.
+     * Lists all Task models.
      * @return mixed
      */
-    public function actionIndex()
+    public function actionMy()
     {
+        $taskQuery = Task::find()->byCreator(Yii::$app->user->id);
         $dataProvider = new ActiveDataProvider([
-            'query' => product::find(),
+            'query' => $taskQuery,
         ]);
 
-        return $this->render('index', [
+        $dataProvider->pagination->pageSize = 5;
+
+        return $this->render('my', [
+            'dataProvider' => $dataProvider,
+        ]);
+    }
+
+    public function actionShared()
+    {
+        $taskQuery = Task::find()
+            ->byCreator(Yii::$app->user->id)
+            ->innerJoinWith(Task::RELATION_TASK_USERS);
+        $dataProvider = new ActiveDataProvider([
+            'query' => $taskQuery,
+        ]);
+
+        $dataProvider->pagination->pageSize = 5;
+
+        return $this->render('shared', [
+            'dataProvider' => $dataProvider,
+        ]);
+    }
+
+    public function actionAccessed()
+    {
+        $query = Task::find()
+            ->innerJoinWith(Task::RELATION_TASK_USERS)
+            ->where(['user_id'=>Yii::$app->user->id]);
+        $dataProvider = new ActiveDataProvider([
+            'query' => $query,
+        ]);
+        $dataProvider->pagination->pageSize = 5;
+        return $this->render('accessed', [
             'dataProvider' => $dataProvider,
         ]);
     }
 
     /**
-     * Displays a single product model.
+     * Displays a single Task model.
      * @param integer $id
      * @return mixed
      * @throws NotFoundHttpException if the model cannot be found
@@ -58,16 +101,17 @@ class ProductController extends Controller
     }
 
     /**
-     * Creates a new product model.
+     * Creates a new Task model.
      * If creation is successful, the browser will be redirected to the 'view' page.
      * @return mixed
      */
     public function actionCreate()
     {
-        $model = new product();
+        $model = new Task();
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+            Yii::$app->session->setFlash('success', 'New task created successfully');
+            return $this->redirect(['task/my']);
         }
 
         return $this->render('create', [
@@ -76,7 +120,7 @@ class ProductController extends Controller
     }
 
     /**
-     * Updates an existing product model.
+     * Updates an existing Task model.
      * If update is successful, the browser will be redirected to the 'view' page.
      * @param integer $id
      * @return mixed
@@ -87,7 +131,8 @@ class ProductController extends Controller
         $model = $this->findModel($id);
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+            Yii::$app->session->setFlash('success', 'Task updated successfully');
+            return $this->redirect(['task/my']);
         }
 
         return $this->render('update', [
@@ -96,7 +141,7 @@ class ProductController extends Controller
     }
 
     /**
-     * Deletes an existing product model.
+     * Deletes an existing Task model.
      * If deletion is successful, the browser will be redirected to the 'index' page.
      * @param integer $id
      * @return mixed
@@ -105,20 +150,20 @@ class ProductController extends Controller
     public function actionDelete($id)
     {
         $this->findModel($id)->delete();
-
-        return $this->redirect(['index']);
+        Yii::$app->session->setFlash('success', 'Task deleted successfully');
+        return $this->redirect(['task/my']);
     }
 
     /**
-     * Finds the product model based on its primary key value.
+     * Finds the Task model based on its primary key value.
      * If the model is not found, a 404 HTTP exception will be thrown.
      * @param integer $id
-     * @return product the loaded model
+     * @return Task the loaded model
      * @throws NotFoundHttpException if the model cannot be found
      */
     protected function findModel($id)
     {
-        if (($model = product::findOne($id)) !== null) {
+        if (($model = Task::findOne($id)) !== null) {
             return $model;
         }
 

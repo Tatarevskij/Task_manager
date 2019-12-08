@@ -77,6 +77,7 @@ class SiteController extends Controller
 
         $model = new LoginForm();
         if ($model->load(Yii::$app->request->post()) && $model->login()) {
+            Yii::info(Yii::$app->user->identity->username, 'log');
             return $this->goBack();
         }
 
@@ -84,6 +85,8 @@ class SiteController extends Controller
         return $this->render('login', [
             'model' => $model,
         ]);
+
+
     }
 
     /**
